@@ -207,19 +207,21 @@ Rezultujuca kolona `Survived` se eksplicitno odbija kao input feature.
 
 Podrzavanje bilo kog skupa podataka. 
 
-Potrebno je napravit konfigurabilan prompt, koji bi se cuvao vjerovatno u bazi i bilo lahko izmjenljiv a ne hardkodiran u kodu kao trenutni. Cuvao bih ga u .json formatu unutar sql baze. Dodao 
-bih i odvojena kreiranja scheme (koja bih na isti nacin cuvao u bazi) sa informacijama o nazivima kolona, tipovima kolona, dozvoljenim modelima, pretprocesiranju i itd. Dakle svaki dataset bi imao posebnu odvojenu domensku konfiguraciju.
+Potrebno je napravit konfigurabilan prompt, koji bi se cuvao vjerovatno u bazi i bio lahko izmjenljiv a ne hard-kodiran u kodu kao sto je u kodu trenutno. Cuvao bih ga u .json formatu unutar sql baze. Dodao 
+bih i odvojena kreiranja scheme (koja bih na isti nacin cuvao u bazi) sa informacijama o nazivima kolona, tipovima kolona, dozvoljenim modelima, pretprocesiranju i itd. Dakle svaki data-set bi imao posebnu i odvojenu domensku konfiguraciju.
 Cuvanje u bazi omogucava lahku izmjenu  bez deploya aplikacije.
-Aplikacija prvo ucitava konfiguraciju, zatim LLM-u salje odvojen prompt zajedno sa odgovarajucom schemom kako bi llm vratio plan samo iz doyvoljenih opcija. Nakon toga se pipeline izvrsava kao i do sad (uz naravno izmjene i konfiguraciju dodatnih mogela). Citav dio koda vezan za dodavanje modela moze biti konfigurabilan i sacuvan externo u bazi kako bi se bez deploya novi modeli mogli dodavati (ako su instalirani). Ovo omogucava izvojeno pokretanje koda. Ovim se pravi siguran sistem, koji je i dalje kontrolisan. 
+Aplikacija prvo ucitava konfiguraciju, zatim LLM-u salje odvojen prompt zajedno sa odgovarajucom schemom kako bi llm vratio plan samo iz dozvoljenih opcija. Nakon toga se pipeline izvrsava kao i do sad (uz naravno izmjene i konfiguraciju dodatnih modela). Citav dio koda vezan za dodavanje modela moze biti konfigurabilan i sacuvan externo u bazi ( u vidu skripti) kako bi se bez deploya novi modeli mogli dodavati (ako su instalirani naravno). Ovo omogucava izvojeno pokretanje koda. Sijedeci ovaj pristup pravi se siguran sistem, koji je i dalje kontrolisan. 
 
 ## 2
 
 Podrzavanje opcije chata umjesto jedne instrukcije
 
- Umjesto jedne instrukcije, dodao bih opciju sesije na nacin da spasavam razgovor i trenutno stanje korsnickih zahtjeva (npr plan iz llma, dataset koji se koristi, model i itd). 
-Svaka nova poruka prema LLM bi azurirala potrebne informacije u stateu/ u ili bazi kroz svaki prompt. Trening bi se pokrenuo tek nakon korisnicke potvrde i prolaska kroz pipeline. 
+Umjesto jedne instrukcije, dodao bih opciju sesije na nacin da spasavam razgovor - trenutno stanje korsnickih zahtjeva (npr. plan iz llma, dataset koji se koristi, model i itd) u state ili bazi. 
+Svaka nova poruka prema LLM- u (svaki prompt) bi azurirala potrebne informacije u state- u/ bazi. Trening bi se pokrenuo tek nakon korisnicke potvrde, sa parametrima dobijenim iz plana na osnovu posljednjih informacija spasenih u bazi pomocu ranije opisanim azuriranjem. Trening se obavlja potom prolaskom kroz pipeline sa propagiranjem plana iz prethodno opisanog koraka. 
 
 ## 3
 EDA Features
 
-Ovo bih uradio pomocu koraka preproceuiranja podataka. Ciljao bih informacije koje mogu bit znacajne za deskriptivne statistike kao sto su tipovi kolona, distribucije, srednje vrijednosti, range, min-max, frekvencije i dr. Na osnovu toga llmu bih poslao zahtjev za prijednlog korisnih transformacija i kreiranje plana prproceuiranja. To moze biti npr: izbacivanje nekvalitetnih kolona, kreiranje novih feature-a spojem drugih featurea (feature engineering) i dr. Ipak, ovdje moramo biti pazljivi da korisnik mora potvrditi sve izmjene (kao sto je to slucaj kod poznatih agent alata danas npr claude ili codex).
+Ovo bih uradio pomocu koraka pretprocesiranja podataka- dataseta. Ciljao bih informacije koje mogu bit znacajne za deskriptivne statistike kao sto su tipovi kolona, distribucije, srednje vrijednosti, range, min-max, frekvencije i dr. Sve bih ih spasio u bazu kao opis dataseta i to na naredni nacin. Kako datasetovi mogu biti razliciti, sa razlicitim kolonama (kategoricke, ordered, numerical, itd), informacije bih spasio u obliku .json- a. Ovim mozemo racunati deskriptivne statistike za svaki skup podataka i to za svaku pojedinacnu kolonu dataseta (jer .json dozvoljava nesting). Korisnik 
+kreira upit prema LLM- u koji vrsi kreiranje plana (slicno kao u trenutnom kodu samo malo jednostavnije). Plan se proslijedjuje .py skripti koja iz baze vadi trazene informacije na osnovu propagiranog plana (ukoliko su dostupne) i potom ih vraca natrag za ispis. 
+Takodjer po zaprimanju novog dataseta, uz izracunavanje svih deskriptivnih statistika poslao bih paralelno llmu zahtjev za prijednlog korisnih transformacija i kreiranje plana preprocesuiranja dataseta. To moze biti npr: izbacivanje nekvalitetnih kolona, kreiranje novih feature-a spojem drugih featurea (feature engineering) i dr. Ipak, ovdje moramo biti pazljivi da korisnik mora potvrditi sve izmjene (kao sto je to slucaj kod poznatih agent alata danas npr claude ili codex). Za sve predlozene izmjene treba postojat .py skripta, ili opcija da se ona embeda u sistem externo. Postoji nacin da se skripta ubaci u bazu, kreira executor za skripte koji se potom pozove kad se odredjena skripta zatrazi. One opracije za koje ne postoji skripta ne mogu biti ni izvrsne (isto kao sto vrijedi u trenutnoj implmentaciji za ml trening). Nakon sto korisnik potvrdi, deskriptivne statistike se prosiruju za novo izracunate. 
