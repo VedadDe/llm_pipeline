@@ -1,0 +1,7 @@
+- The binary classification target is `Survived`.
+- Only supported model and preprocessing choices are executed.
+- Unsupported safe options fall back to defaults with clear warnings.
+- Unsafe or leakage-prone requests, such as using `Survived` as an input feature, are rejected.
+- The LLM is a planner that returns JSON; it does not execute code or generate Python.
+- API keys are read from environment variables or local `.env`, never from committed source.
+- The default dataset path is `data/titanic.csv`.

@@ -1,0 +1,1 @@
+Train a Titanic survival model using KNN with average age imputation.

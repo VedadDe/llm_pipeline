@@ -1,0 +1,1 @@
+Train a Titanic survival model using Age, Sex, Pclass, SibSp, Parch, and Fare. Use xgboost if available.
